@@ -1,0 +1,59 @@
+<?php
+
+
+/*
+ * Implement hook_install()
+ */
+function civicrm_address_geocode_install() {
+  civicrm_initialize();
+  /**
+   * Create a geofield.
+   */
+  $field = array(
+    'field_name' => FIELD_NAME,
+    'type' => 'geofield',
+  );
+  field_create_field($field);
+
+  /**
+   * Bind field to a entity bundle.
+   */
+  $instance = array(
+    'label' => 'Geo Code',
+    'field_name' => $field['field_name'],
+    'entity_type' => 'civicrm_address',
+    'bundle' => 'civicrm_address',
+    'widget' => array(
+      'type' => 'geocoder',
+    ),
+  );
+  field_create_instance($instance);
+
+  $params = array(
+    'geocode' => 1,
+    'parse' => 0, // Set this to 1 if you want to parse addresses.
+    'throttle' => 1,
+  );
+  $gc = new CRM_Utils_Address_BatchUpdate($params);
+  $result = $gc->run();
+  if ($result['is_error'] == 1) {
+    drupal_set_message(t($result['messages']), 'error');
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Remove field from civicrm_address bundle and then delete the field.
+ */
+function civicrm_address_geocode_uninstall() {
+  $instance = array(
+    'label' => 'Geo Code',
+    'field_name' => FIELD_NAME,
+    'entity_type' => 'civicrm_address',
+    'bundle' => 'civicrm_address',
+  );
+  field_delete_instance($instance);
+  field_delete_field($instance['field_name']);
+  print 'Removed ' . $instance['label'] . "\n";
+}
